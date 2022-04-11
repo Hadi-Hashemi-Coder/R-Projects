@@ -1,0 +1,100 @@
+# STAT 327 Group work on Optimization
+
+Please write the names and email addresses of your group members.
+Here's an example:
+
+* Name / email (@wisc.edu only): Kelsey Gelden / kgelden@wisc.edu
+
+# Part 1: One-dimensional optimization
+
+Graph the object's altitude vs. time.
+
+```{r}
+z = function(x){
+  return(100 + (80 / 15) * (55 + ((80 * 9.81) / 15)) * (1 - exp(-1 * (15 / 80) * x)) - (((80 * 9.81) / 15) * x))
+}
+
+curve(expr = z, from = 0, to = 12, xlab = "Time (s)", ylab = "Altitude (m)", main = "Altitude vs. Time", xlim = c(0, 12), ylim = c(0, 200))
+```
+
+Find the time at which the object strikes the ground.
+
+```{r}
+zeroHeight = uniroot(f = z, interval = c(0, 12))
+print(paste0("The object strikes the ground at ", zeroHeight$root, " seconds."))
+```
+
+Find the object's maximum height.
+
+```{r}
+max = optimize(f = z, interval = 0:12, maximum = TRUE)
+print(paste0("The objects maximum height is: ", max$objective, " meters."))
+```
+
+Find the time at which the object reaches its maximum height.
+
+```{r}
+print(paste0("The object reaches its maximum height at ", max$maximum, " seconds."))
+```
+
+# Part 2: Multi-dimensional optimization
+
+Implement `gradient.descent()`.
+
+```{r}
+f = function(x, y){
+  return(7.9 + (.13 * x) + (.21 * y) - (.05 * x^2) - (.016 * y^2) - (.007 * x * y))
+}
+
+grad.f.par = function(par) {
+  x = par[1]
+  y = par[2]
+  df.dx = 0.13 - (.1 * x) - (0.007 * y)
+  df.dy = 0.21 - (.032 * y) - (0.007 * x)
+  return(c(df.dx, df.dy))
+}
+
+gradient.descent = function(par, gr, gamma = .1, epsilon = .01, n = 1000, verbose = FALSE, ...) {
+  final = par
+  
+  for (i in seq_len(n)) {
+    if(f(final[1], final[2]) < f(par[1], par[2])){
+      final = par
+    }
+    
+    gradient = gr(par, ...)
+    par = par + gamma * gradient
+    gradient.size = sum(abs(gradient))
+
+    if (gradient.size < epsilon) {
+      break
+    }
+  }
+  
+  return(final)
+}
+
+point = gradient.descent(par = c(-10, 0), gr = grad.f.par, verbose = FALSE)
+
+grid.n = 20
+grid.x = seq(-10, 10)
+grid.y = seq(0, 20)
+grid.z = outer(X = grid.x, Y = grid.y, FUN = f)
+persp.out = persp(grid.x, grid.y, grid.z, main = "2D Graph of concentration", xlab = "X", ylab = "Y", zlab = "Z", ticktype = "detailed", theta = 45, phi = 30)
+points(trans3d(point[1], point[2], f(point[1], point[2]), pmat = persp.out), col = "red", pch = 16)
+
+#optim(par = c(-10, 0), fn = f, gr = NULL, method = "Nelder-Mead")
+#optim(par = c(-10, 0), fn = f, gr = grad.f.par, method = "BFGS")
+
+```
+
+Graph the concentration.
+
+Use `gradient.descent()` to find the peak.
+
+Use `optim()` with `method=Nelder-Mead` to find the peak.
+
+Use `optim()` with `method=BFGS` to find the peak.
+
+How many calls did `optim()` make in each case? Which method would you
+expect to be faster?
