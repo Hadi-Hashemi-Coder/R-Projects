@@ -333,7 +333,7 @@ c=function(x,B=o.m$par){
   return(1/(1+exp(-(B[1]+B[2]*x))))
 }
 
-plot(x=jitter(menarche.cases[,1]),y=menarche.cases[,2],main="age vs menarche",xlab="age",ylab="percent chance of first menarche")
+plot(x=jitter(menarche.cases[,1]),y=menarche.cases[,2],main="age vs menarche",xlab="age",ylab="percent chance of menarche")
 points(x=menarche[,1],y=menarche[,3]/menarche[,2],col="red")
 curve(c,from=8,to=25,add = TRUE)
 ```
