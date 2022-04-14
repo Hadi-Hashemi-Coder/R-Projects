@@ -19,9 +19,8 @@ curve(altitude, from = 0, to = 20, main = "Graph of altitude vs time")
 Find the time at which the object strikes the ground.
 
 ```{r}
-for(i in seq(11, 12, length.out=10000)){
-  if(all.equal(altitude(t=i),0,tolerance=0.001)==TRUE){cat(i)}
-}
+zeroHeight = uniroot(f = altitude, interval = c(0, 12))
+print(paste0("The object strikes the ground at ", zeroHeight$root, " seconds."))
 ```
 
 Find the object's maximum height.
