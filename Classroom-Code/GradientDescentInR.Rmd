@@ -1,0 +1,128 @@
+# STAT 305 Group work on Optimization
+
+Please write the names and email addresses of your group members.
+
+* Name / email (@wisc.edu only): Hadi Hashemi Nejad / mhashemineja@wisc.edu
+
+# Part 1: One-dimensional optimization
+
+Graph the object's altitude vs. time.
+
+```{r}
+rm(list=ls())
+altitude = function(t, z0 = 100, g = 9.81, v0=55, m=80, c=15){
+  return(z0 + (m/c)*(v0+m*g/c)*(1-exp(-c*t/m))-m*g*t/c)
+}
+curve(altitude, from = 0, to = 20, main = "Graph of altitude vs time")
+```
+
+Find the time at which the object strikes the ground.
+
+```{r}
+zeroHeight = uniroot(f = altitude, interval = c(0, 12))
+print(paste0("The object strikes the ground at ", zeroHeight$root, " seconds."))
+```
+
+Find the object's maximum height.
+
+```{r}
+optimize(altitude,lower=0,upper=20,maximum=TRUE)$objective
+```
+
+Find the time at which the object reaches its maximum height.
+
+```{r}
+optimize(altitude,lower=0,upper=20,maximum=TRUE)$maximum
+```
+
+# Part 2: Multi-dimensional optimization
+
+Implement `gradient.descent()`.
+
+```{r}
+Z = function(x,y){
+  return(7.9+0.13*x+0.21*y-0.05*x**2-0.016*y**2-0.007*x*y)
+}
+Z.prime = function(par){
+  x=par[1]
+  y=par[2]
+  dZ.dx=0.13-0.1*x-0.007*y
+  dZ.dy=0.21-0.032*y-0.007*x
+  return(c(dZ.dx,dZ.dy))
+}
+gradient.descent = function(par, gr, gamma = .1, epsilon = .01, n = 100, verbose = FALSE, graph=FALSE, ...) {
+  if(graph){
+    x=seq(-10,10)
+    y=seq(0,20)
+    z=outer(x,y,Z)
+    persp.out=persp(x,y,z,
+    main="Distribution of pollutant concentration in a channel",
+    zlab = "Concentration",
+    theta = 45, phi = 45,
+    col = "orange", shade = 0.4)
+    }
+  z.old = Z(par[1],par[2])
+  for (i in seq_len(n)) {
+    gradient = gr(par, ...)
+    par = par + gamma * gradient
+    z = Z(par[1], par[2])
+    gradient.size = sum(abs(gradient))
+    if (verbose) {
+      cat(sep = "", "i = ", i, ", par = c(", paste(signif(par, 4), collapse = ","),
+          "), gradient = c(", paste(signif(gradient, 4), collapse = ","),
+          "), size = ", signif(gradient.size, 4), "\n")
+    }
+    if (graph) { # This block is not part of the algorithm. It just draws.
+      points(trans3d(x = par[1], y = par[2], z = 0, pmat = persp.out), col = "blue", pch = 16)
+      points(trans3d(x = par[1], y = par[2], z = z, pmat = persp.out), col = "red",  pch = 16)
+      lines(trans3d(x = c(par[1], par[1]), y = c(par[2], par[2]), z = c(0, z), pmat = persp.out), col = "black")
+    }
+    if (gradient.size < epsilon || z.old > z) {
+      break
+    }
+    z.old=z
+  }
+  if(graph){
+    points(trans3d(x = par[1], y = par[2], z = z, pmat = persp.out), col = "yellow",  pch = 11)
+  }
+  return(par)
+}
+
+```
+Graph the concentration.
+
+Use `gradient.descent()` to find the peak.
+
+Use `optim()` with `method=Nelder-Mead` to find the peak.
+
+Use `optim()` with `method=BFGS` to find the peak.
+
+How many calls did `optim()` make in each case? Which method would you
+expect to be faster?
+
+```{r}
+#gradient descent concentration
+g.d.c = gradient.descent(par = c(0, 0), gr = Z.prime, n = 1000, verbose = FALSE, graph = TRUE)
+print(paste0("The peak concentration using gradient descent method is: ", Z(g.d.c[1],g.d.c[2])," where x=", g.d.c[1], " y=",g.d.c[2]))
+
+Z.for.other.methods = function(par){
+  x=par[1]
+  y=par[2]
+  return(7.9+0.13*x+0.21*y-0.05*x**2-0.016*y**2-0.007*x*y)
+}
+
+#Nelder-Mead concentration
+n.m.c = optim(par=c(0,0), fn = Z.for.other.methods, method = "Nelder-Mead", control = list(fnscale = -1))
+print(paste0("The peak concentration using Nelder-Mead method is: ", n.m.c$value," where x=", n.m.c$par[1], " y=",n.m.c$par[2]))
+
+#BFGS concentration
+bfgs.c = optim(par=c(0,0),gr=Z.prime,fn=Z.for.other.methods,method="BFGS",control = list(fnscale = -1))
+print(paste0("The peak concentration using BFGS method is: ", bfgs.c$value," where x=", bfgs.c$par[1], " y=",bfgs.c$par[2]))
+
+#counts
+print(paste0("Nelder-Mead method made ",n.m.c$counts[[1]], " many calls to the concentration function"))
+print(paste0("BFGS method made ",bfgs.c$counts[[1]], " many calls to the concentration function and ",bfgs.c$counts[[2]]," many calls to the concentration gradient"))
+
+print("I expected BFGS to be the fastest")
+```
+
